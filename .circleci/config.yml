@@ -27,10 +27,10 @@ aliases:
         git config --global user.email $GIT_EMAIL
         git config --global user.name $GIT_USERNAME
         touch app.config.js
-        touch app3.config.js
+        touch app2.config.js
         git remote set-url origin git@github.com:$GIT_USERNAME/simpleRepo.git
         git add app.config.js
-        git add app3.config.js
+        git add app2.config.js
         git commit -m "[CircleCI] Increment Build Version"
         git push origin main
       working_directory: /tmp/workspace
