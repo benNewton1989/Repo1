@@ -28,7 +28,7 @@ aliases:
         git config --global user.name $GIT_USERNAME
         touch app.config.js
         touch app2.config.js
-        git remote set-url origin git@github.com:$GIT_USERNAME/simpleRepo.git
+        git remote set-url origin git@github.com:$GIT_USERNAME/Repo1.git
         git add app.config.js
         git add app2.config.js
         git commit -m "[CircleCI] Increment Build Version"
