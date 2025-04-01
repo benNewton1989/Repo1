@@ -1,0 +1,140 @@
+version: 2.1
+
+executors:
+  default:
+    docker:
+      - image: cimg/android:2025.03
+    working_directory: ~/Consumer App
+  mac-os:
+    macos:
+      xcode: 16.0.0
+    working_directory: ~/Consumer App
+
+aliases:
+  - &git-init
+    run:
+      name: Initialize git repo
+      command: |
+        cd /tmp/workspace
+        git init
+  - &update_git
+    run:
+      name: Update Git repo with new changes
+      command: |
+        set -x
+        mkdir -p ~/.ssh && touch ~/.ssh/known_hosts
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        git config --global user.email $GIT_EMAIL
+        git config --global user.name $GIT_USERNAME
+        touch app.config.js
+        touch app3.config.js
+        git remote set-url origin git@github.com:$GIT_USERNAME/simpleRepo.git
+        git add app.config.js
+        git add app3.config.js
+        git commit -m "[CircleCI] Increment Build Version"
+        git push origin main
+      working_directory: /tmp/workspace
+  - &install_expo_cli
+    run:
+      name: Install Expo CLI
+      command: npm install eas-cli
+  - &install_npm
+    run:
+      name: Install NPM
+      command: npm install
+      working_directory: /tmp/workspace
+  - &create_workspace
+    run:
+      name: Creating Workspace
+      command: mkdir -p /tmp/workspace
+  - &expo_build_ios
+    run:
+      name: Trigger EXPO build for IOS
+      no_output_timeout: 25m
+      command: npx eas-cli build --platform ios --non-interactive --profile production --auto-submit
+      working_directory: /tmp/workspace
+  - &expo_build_android
+    run:
+      name: Trigger EXPO build for Android
+      no_output_timeout: 25m
+      command: npx eas-cli build --platform android --non-interactive --auto-submit
+      working_directory: /tmp/workspace
+
+jobs:
+  increment-build:
+    executor: default
+    steps:
+      - *create_workspace
+      - checkout
+      # - run: npm install dotenv
+      # - run: npm run update-app-version
+      - *git-init
+      - store_artifacts:
+          path: /tmp/workspace/logfile.json
+      - persist_to_workspace:
+          root: ~/Consumer App
+          paths:
+            - .
+
+  push-git:
+    executor: default
+    steps:
+      - run: echo 'Uploading changes to Github'
+      - attach_workspace:
+          at: /tmp/workspace
+      - add_ssh_keys:
+          fingerprints:
+            - 'SHA256:6Rd0aIw+6kivLg2IfBgTxabNrAJXMXMOBieoxK/pKoY'
+      - *update_git
+
+  # build-deploy-IOS:
+  #   executor: mac-os
+  #   steps:
+  #     - run: echo 'Deploying IOS Artifact to Apple Store'
+  #     - attach_workspace:
+  #         at: /tmp/workspace
+  #     - *install_npm
+  #     - *install_expo_cli
+  #     - *git-init
+  #     - *expo_build_ios
+
+  # build-deploy-Android:
+  #   executor: default
+  #   steps:
+  #     - run: echo 'Deploying Android Artifact to Android Store'
+  #     - attach_workspace:
+  #         at: /tmp/workspace
+  #     - *install_npm
+  #     - *install_expo_cli
+  #     - *git-init
+  #     - *expo_build_android
+
+workflows:
+  App Release:
+    jobs:
+      - increment-build:
+          filters:
+            branches:
+              only:
+                - main
+      - push-git:
+          requires:
+            - increment-build
+          filters:
+            branches:
+              only:
+                - main
+      # - build-deploy-IOS:
+      #     requires:
+      #       - push-git
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
+      # - build-deploy-Android:
+      #     requires:
+      #       - build-deploy-IOS
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
