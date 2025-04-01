@@ -79,6 +79,9 @@ jobs:
   push-git:
     executor: default
     steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:yX+aVETw+JXiOL/4EFxulFcuSUsyYg5HuvkBSw+R7bY"
       - run: echo 'Uploading changes to Github'
       - attach_workspace:
           at: /tmp/workspace
